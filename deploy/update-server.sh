@@ -1,10 +1,12 @@
 #!/bin/sh
 # Updates the Duckoder server to one version. The deploy workflow sends it to the EC2 instance
-# through Systems Manager, which runs it as root after setting TAG, IMAGE, REGISTRY and REPOSITORY,
-# and DOMAIN when the site has one.
+# through Systems Manager, which runs it as root after setting TAG, IMAGE, REGISTRY, REPOSITORY
+# and REGION, and DOMAIN when the site has one.
 set -eu
 
 APP_DIR=/opt/duckoder
+# Parameter Store parameter, a SecureString, holding the key of the Claude API.
+KEY_PARAMETER=/duckoder/anthropic-api-key
 # How long the new web server may take to report healthy once its container starts.
 HEALTHY_TIMEOUT_S=120
 
@@ -33,8 +35,35 @@ printf '{ "credHelpers": { "%s": "ecr-login" } }\n' "$REGISTRY" > "$DOCKER_CONFI
 
 # The services as the version describes them, and that version's image for the web server.
 fetch compose.yaml
+# .env holds the settings of this server, the Claude API key among them, so only its owner, root,
+# may read it.
 touch .env
+chmod 600 .env
 set_env DUCKODER_IMAGE "$IMAGE"
+
+# The key of the Claude API is read from Parameter Store on the instance itself. It is never in
+# this script, which Systems Manager keeps in its command history for 30 days, nor in the
+# workflow that sends it. Ubuntu has no package for the AWS CLI, and the snap that installs it
+# puts it in a folder outside the PATH this script is run with.
+PATH="$PATH:/snap/bin"
+if ! command -v aws > /dev/null; then
+    snap install aws-cli --classic
+fi
+
+# Without the parameter, the key already in .env is kept: a server answering with a local model
+# needs none of this.
+if key=$(aws ssm get-parameter --region "$REGION" --name "$KEY_PARAMETER" --with-decryption \
+    --query Parameter.Value --output text 2> ssm-error.txt); then
+    set_env APP_ANTHROPIC_API_KEY "$key"
+    echo "Read the key of the Claude API from $KEY_PARAMETER."
+elif grep -q ParameterNotFound ssm-error.txt; then
+    echo "No $KEY_PARAMETER parameter: keeping the key already in .env, if any."
+else
+    cat ssm-error.txt >&2
+    echo "Could not read $KEY_PARAMETER." >&2
+    exit 1
+fi
+rm -f ssm-error.txt
 
 # With a domain, Caddy serves the site over HTTPS on ports 80 and 443, from compose.proxy.yaml;
 # without one, the web server answers on port 8000.

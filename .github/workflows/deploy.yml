@@ -4,7 +4,9 @@ name: Deploy
 # Manager. The release workflow calls it after publishing each version; to deploy one by hand,
 # run it from the Actions tab with the version's tag picked in "Use workflow from". The AWS setup,
 # the AWS_ROLE_ARN secret and the AWS_REGION and EC2_INSTANCE_ID variables are in the README, as
-# is the optional DUCKODER_DOMAIN variable, which serves the site over HTTPS at that domain.
+# is the optional DUCKODER_DOMAIN variable, which serves the site over HTTPS at that domain. The
+# key of the Claude API is not here: the instance reads it from Parameter Store, as the README
+# explains.
 on:
   workflow_call:
   workflow_dispatch:
@@ -27,6 +29,7 @@ jobs:
     env:
       TAG: ${{ github.ref_name }}
       INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+      REGION: ${{ vars.AWS_REGION }}
       DOMAIN: ${{ vars.DUCKODER_DOMAIN }}
     steps:
       - name: Check that a version tag was picked
@@ -68,10 +71,10 @@ jobs:
         run: |
           jq -n --rawfile script deploy/update-server.sh \
             --arg tag "$TAG" --arg registry "$REGISTRY" --arg repository "$GITHUB_REPOSITORY" \
-            --arg domain "$DOMAIN" \
+            --arg region "$REGION" --arg domain "$DOMAIN" \
             '{
               commands: [
-                "export TAG=\($tag) IMAGE=\($registry)/duckoder:\($tag) REGISTRY=\($registry) REPOSITORY=\($repository) DOMAIN=\($domain)",
+                "export TAG=\($tag) IMAGE=\($registry)/duckoder:\($tag) REGISTRY=\($registry) REPOSITORY=\($repository) REGION=\($region) DOMAIN=\($domain)",
                 $script
               ],
               executionTimeout: ["3600"]
