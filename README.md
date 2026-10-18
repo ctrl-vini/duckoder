@@ -406,6 +406,14 @@ With the server running, from another device on the same network:
 9. Make the provider fail, by stopping Ollama or pointing the key at nothing, and send a
    request; a readable error appears and the duck looks confused.
 
+## Contributing
+
+[CONTRIBUTING.md](CONTRIBUTING.md) has the setup, the checks to run before a commit and the
+conventions this repository follows; [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) applies to everyone
+taking part. A vulnerability goes in a private report, as [SECURITY.md](SECURITY.md) describes,
+never in a public issue. Duckoder is an undergraduate thesis project, so its scope is closed until
+the defense: open an issue before writing a pull request that widens it.
+
 ## License
 
 Duckoder is free software under the
@@ -420,6 +428,9 @@ instance should point it at the source of that modification instead.
 The JetBrains Mono font bundled in `static/fonts/` keeps its own license, the SIL Open Font
 License 1.1, in `static/fonts/jetbrains-mono-OFL.txt`. The dependencies in `requirements.txt` are
 MIT and BSD licensed.
+
+If you use Duckoder in academic work, [CITATION.cff](CITATION.cff) has the metadata GitHub turns
+into a citation.
 
 ### About the generated code
 
