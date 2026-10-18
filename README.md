@@ -405,3 +405,26 @@ With the server running, from another device on the same network:
 8. Type `clear` and confirm; the screen empties and the next reply starts again at "versão 1".
 9. Make the provider fail, by stopping Ollama or pointing the key at nothing, and send a
    request; a readable error appears and the duck looks confused.
+
+## License
+
+Duckoder is free software under the
+[GNU Affero General Public License v3.0 or later](LICENSE). You may use, study, change and
+redistribute it, as long as what you pass on stays under the same license and carries its notices.
+
+Because this is a web application, the AGPL asks for one thing more than the GPL: whoever
+**publishes a modified version for others to use over a network** has to offer those users its
+source code. The interface's "sobre" dialog links to this repository for that reason; a modified
+instance should point it at the source of that modification instead.
+
+The JetBrains Mono font bundled in `static/fonts/` keeps its own license, the SIL Open Font
+License 1.1, in `static/fonts/jetbrains-mono-OFL.txt`. The dependencies in `requirements.txt` are
+MIT and BSD licensed.
+
+### About the generated code
+
+The platform writes a draft. A language model can produce code that does not compile, that drives
+a pin the board does not have, or that works in a way the student did not ask for — read it and
+test it before flashing a board. The license says this in legal terms, and it is worth saying
+plainly: the code comes with no warranty, and the risk of running it on hardware is whoever runs
+it.
