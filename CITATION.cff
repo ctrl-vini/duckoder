@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 title: Duckoder
-message: If you use Duckoder in your work, please cite it as below.
+message: If you use Duckoder in your work, please cite the monograph below.
 type: software
 abstract: >-
   Web platform that generates code for teaching boards, such as the ESP32 and the Arduino Uno,
@@ -8,7 +8,7 @@ abstract: >-
   Claude API or by a language model running locally through Ollama, from a hardware profile that
   describes the board's components and pins.
 authors:
-  - given-names: José Vinicius
+  - given-names: José Vinícius
     family-names: Alves de Oliveira
     alias: ctrl-vini
 license: AGPL-3.0-or-later
@@ -23,3 +23,22 @@ keywords:
   - large language models
   - code generation
   - computing education
+
+# The work the software belongs to; GitHub's citation box offers this one.
+preferred-citation:
+  type: thesis
+  title: >-
+    Plataforma web com LLM local para apoio à programação de sistemas embarcados
+    didáticos
+  authors:
+    - given-names: José Vinícius
+      family-names: Alves de Oliveira
+  year: 2026
+  institution:
+    name: Instituto Federal de Educação, Ciência e Tecnologia do Ceará
+    city: Jaguaribe
+    country: BR
+  thesis-type: >-
+    Monografia (Tecnólogo em Redes de Computadores) — Campus Jaguaribe
+  languages:
+    - por

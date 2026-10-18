@@ -416,6 +416,8 @@ the defense: open an issue before writing a pull request that widens it.
 
 ## License
 
+Copyright © 2026 José Vinícius Alves de Oliveira.
+
 Duckoder is free software under the
 [GNU Affero General Public License v3.0 or later](LICENSE). You may use, study, change and
 redistribute it, as long as what you pass on stays under the same license and carries its notices.
