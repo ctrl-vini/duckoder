@@ -1,0 +1,28 @@
+name: Idea or improvement
+description: Suggest something the platform could do, or do better.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Duckoder is an undergraduate thesis project, so its scope is closed until the defense.
+        An idea recorded now is an idea that can be picked up afterwards.
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What is awkward today, for a student or for whoever runs the platform.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What you have in mind
+      description: Optional. A rough direction is enough.
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Before sending
+      options:
+        - label: I read the scope note above and know this may wait until after the defense.
+          required: true

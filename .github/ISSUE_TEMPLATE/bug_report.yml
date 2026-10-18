@@ -1,0 +1,64 @@
+name: Bug report
+description: Something in the platform behaves differently from what the README describes.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A reply you did not like is not a bug by itself: the model writes a draft for you to read
+        and test. A bug is the platform doing something other than what it documents.
+  - type: input
+    id: version
+    attributes:
+      label: Duckoder version
+      description: The version shown in the "sobre" dialog, or the tag you deployed.
+      placeholder: "1.4.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: provider
+    attributes:
+      label: Provider
+      options:
+        - anthropic (Claude API)
+        - ollama (model on this machine)
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Model
+      placeholder: "claude-sonnet-5-5, qwen2.5-coder:7b..."
+  - type: dropdown
+    id: board
+    attributes:
+      label: Board
+      options:
+        - ESP32
+        - Arduino Uno R3
+        - Arduino Uno R4
+        - Arduino Mega 2560
+        - Arduino Nano
+        - Another board, or none in particular
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you asked for, what the platform did, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Server log
+      description: The lines around the failure, if you have them.
+      render: shell
+  - type: checkboxes
+    id: no-secrets
+    attributes:
+      label: Before sending
+      options:
+        - label: There is no API key in anything I pasted above.
+          required: true
