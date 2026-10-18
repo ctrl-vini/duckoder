@@ -414,6 +414,14 @@ taking part. A vulnerability goes in a private report, as [SECURITY.md](SECURITY
 never in a public issue. Duckoder is an undergraduate thesis project, so its scope is closed until
 the defense: open an issue before writing a pull request that widens it.
 
+## Supporting the project
+
+The instance at [www.duckoder.com.br](https://www.duckoder.com.br) answers with the Claude API, and
+that bill is paid by one person. If the platform was useful to you and you want to help keep it
+online, there is a [payment link](https://link.mercadopago.com.br/duckoder) that takes PIX and
+cards. Nothing here is behind a paywall either way, and running Duckoder yourself with a local
+model costs nothing beyond the machine it runs on.
+
 ## License
 
 Copyright © 2026 José Vinícius Alves de Oliveira.

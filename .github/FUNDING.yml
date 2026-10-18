@@ -1,0 +1,4 @@
+# The sponsor button GitHub shows at the top of the repository. It only takes effect from the
+# default branch. `github: ctrl-vini` goes in here once the GitHub Sponsors profile is approved;
+# before that, the button would point at a page that does not exist yet.
+custom: ["https://link.mercadopago.com.br/duckoder"]
