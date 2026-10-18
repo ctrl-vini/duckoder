@@ -1,6 +1,6 @@
 # The Duckoder web server. The language model runs in its own container, the ollama service in
 # compose.yaml, or in Ollama installed on the host.
-FROM python:3.12-slim
+FROM python:3.14-slim
 
 # Logs reach `docker logs` as soon as they are written, and no .pyc files end up in the image.
 ENV PYTHONUNBUFFERED=1 \
