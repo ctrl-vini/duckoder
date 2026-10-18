@@ -3,10 +3,14 @@
 ![Duckoder](docs/banner.svg)
 
 Web platform that generates code for teaching boards, such as the ESP32 and the Arduino Uno, Mega
-and Nano, using a language model that runs locally through [Ollama](https://ollama.com). The student
-picks a board, explains to a rubber duck what the board should do, and gets code ready to paste into
-the IDE, which can be refined in the same conversation. It works entirely on the local network: no
-internet access or paid service is required while it is in use.
+and Nano, using a language model. The student picks a board, explains to a rubber duck what the
+board should do, and gets code ready to paste into the IDE, which can be refined in the same
+conversation.
+
+The code comes either from the [Claude API](https://claude.com), which is the default and needs
+no GPU, or from a model running on the machine itself through [Ollama](https://ollama.com), chosen
+in one setting. With the local model it works entirely on the local network, with no internet
+access and no paid service while it is in use.
 
 Duckoder is the subject of my undergraduate thesis (TCC); the thesis itself is in
 [ctrl-vini/rdc-tcc](https://github.com/ctrl-vini/rdc-tcc).
@@ -14,7 +18,7 @@ Duckoder is the subject of my undergraduate thesis (TCC); the thesis itself is i
 ## Requirements
 
 - Python 3.11 or newer
-- Ollama
+- A Claude API key, or Ollama to generate with a model on this machine
 
 Or only Docker, as in [Running with Docker](#running-with-docker).
 
@@ -28,7 +32,49 @@ pip install -r requirements-dev.txt
 
 ## Language model
 
-Pull a model and check that it answers:
+The platform generates code with one of two providers, picked by `APP_LLM_PROVIDER`:
+
+| Provider | When it is the right one |
+| --- | --- |
+| `anthropic` (default) | The Claude API: fast answers from a machine with no GPU, paid per token |
+| `ollama` | A model running on this machine: nothing to pay per request and no key, as long as the machine answers fast enough |
+
+`app/clients/llm_provider.py` holds the registry that maps each name to its client, and it is the
+only module that knows more than one provider exists. The rest of the platform asks the
+`LlmClient` of `app/clients/llm_client.py` for a reply and never learns where it came from, which
+is also how the tests answer without a model. Supporting a third provider means writing its
+client beside `ollama_client.py` and adding a line to `BUILTIN_PROVIDERS`.
+
+### Answering with the Claude API
+
+This is what the platform does unless told otherwise. Create a key in the
+[Claude Console](https://console.anthropic.com), then write it into `.env`, which is never
+committed:
+
+```bash
+cp .env.example .env
+chmod 600 .env
+```
+
+```
+APP_LLM_PROVIDER=anthropic
+APP_ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Compose reads `.env` by itself. Outside Docker the server reads the environment, not that file,
+so load it first: `set -a; . ./.env; set +a`.
+
+The key is held in a `SecretStr`, so printing the settings, logging them or showing them in a
+traceback writes `SecretStr('**********')`; and a provider without its key stops the server at
+startup instead of answering the first student with an error. Two settings bound what the API
+can cost: `APP_ANTHROPIC_MAX_TOKENS`, the longest reply it may write, and
+`APP_MAX_REQUESTS_PER_HOUR`, how many replies the whole server generates in an hour, which is
+what keeps a public address from spending the account's credit. That hour's requests are counted
+in memory, so restarting the server starts the count again.
+
+### Answering with a model on this machine
+
+Set `APP_LLM_PROVIDER=ollama`, then pull a model and check that it answers:
 
 ```bash
 ollama pull qwen2.5-coder:7b
@@ -37,7 +83,7 @@ ollama run qwen2.5-coder:7b --verbose "Write an Arduino sketch for the ESP32 tha
 
 `--verbose` prints the load time and the generation speed after the answer.
 
-To try a request through the platform's own prompt, board profile and model settings:
+To try a request through the platform's own prompt, board profile and provider:
 
 ```bash
 python -m scripts.ask_model "Pisque o LED embutido a cada segundo" --board esp32
@@ -66,9 +112,13 @@ every load and an updated interface reaches students with a plain reload.
 docker compose up -d
 ```
 
-`compose.yaml` starts three services: `app`, the web server built from the `Dockerfile`;
-`ollama`, the language model server; and `model`, which downloads the model into the `models`
-volume on the first start, about 4.7 GB, and then exits. Follow the download with
+`compose.yaml` starts `app`, the web server built from the `Dockerfile`, which answers with the
+Claude API, so `.env` needs `APP_ANTHROPIC_API_KEY`.
+
+Adding `APP_LLM_PROVIDER=ollama` and `COMPOSE_PROFILES=local-model` to `.env` runs the model in
+Docker too, in two more services: `ollama`, the model server, and `model`, which downloads the
+model into the `models` volume on the first start, about 4.7 GB, and then exits. Follow the
+download with
 `docker compose logs -f model`. Later starts find the model in the volume and need no internet.
 
 The page is then on port 8000 of the machine running Docker, such as `http://192.168.0.10:8000`;
@@ -77,16 +127,18 @@ the address in the server log is the container's own. Conversations are kept in 
 `docker compose down -v` deletes them, along with the model.
 
 `APP_OLLAMA_MODEL` picks another model for both the server and the download, such as
-`APP_OLLAMA_MODEL=llama3.1:8b docker compose up -d`; the other settings in
-[Configuration](#configuration) go in the `environment` of the `app` service.
+`APP_OLLAMA_MODEL=llama3.1:8b docker compose up -d`. The settings the `app` service passes on are
+read from `.env` as well; any other one in [Configuration](#configuration) goes in the
+`environment` of that service.
 
 Without a GPU the model runs on the CPU, which is much slower:
 
+- The Claude API needs no GPU at all, and is the default.
 - On Linux with an NVIDIA GPU and the NVIDIA Container Toolkit, add the GPU file:
-  `docker compose -f compose.yaml -f compose.gpu.yaml up -d`.
+  `COMPOSE_PROFILES=local-model docker compose -f compose.yaml -f compose.gpu.yaml up -d`.
 - On a Mac, Docker Desktop does not give containers the Apple GPU, so use Ollama installed on the
-  Mac and run only the web server in Docker:
-  `APP_OLLAMA_URL=http://host.docker.internal:11434 docker compose up -d --no-deps app`. The same
+  Mac and run only the web server in Docker: with `APP_LLM_PROVIDER=ollama` and
+  `APP_OLLAMA_URL=http://host.docker.internal:11434` in `.env`, `docker compose up -d`. The same
   works on Linux with Ollama listening beyond loopback (`OLLAMA_HOST=0.0.0.0`).
 
 ## The interface
@@ -142,16 +194,24 @@ All settings are environment variables with defaults, so nothing needs to be set
 | --- | --- | --- |
 | `APP_HOST` | `0.0.0.0` | Network interface the server listens on |
 | `APP_PORT` | `8000` | Server port |
+| `APP_LLM_PROVIDER` | `anthropic` | Which service generates the code: `anthropic`, the Claude API, or `ollama`, a model on this machine |
+| `APP_MAX_REQUESTS_PER_HOUR` | `60` | Replies the server generates in an hour, counted across every visitor; `0` turns the cap off |
+| `APP_ANTHROPIC_API_KEY` | — | Claude API key; without it the `anthropic` provider does not start |
+| `APP_ANTHROPIC_MODEL` | `claude-sonnet-5-5` | Model of the Claude API |
+| `APP_ANTHROPIC_MAX_TOKENS` | `4096` | Longest reply the API may write, which also bounds what one reply costs |
+| `APP_ANTHROPIC_TIMEOUT_S` | `120` | How long to wait for the API before giving the student an error |
 | `APP_OLLAMA_URL` | `http://localhost:11434` | Address of the Ollama service |
-| `APP_OLLAMA_MODEL` | `qwen2.5-coder:7b` | Model used to generate code |
-| `APP_LLM_TEMPERATURE` | `0.7` | Sampling temperature; higher values vary more between runs |
+| `APP_OLLAMA_MODEL` | `qwen2.5-coder:7b` | Model Ollama generates with |
+| `APP_LLM_TEMPERATURE` | `0.7` | Sampling temperature for Ollama; higher values vary more between runs. The Claude API takes none |
 | `APP_LLM_CONTEXT_SIZE` | `8192` | Context window in tokens; Ollama silently drops what exceeds it |
 | `APP_LLM_KEEP_ALIVE` | `30m` | How long Ollama keeps the model loaded after the last request |
 | `APP_BOARDS_DIR` | `data/boards` | Folder with the board profiles |
 | `APP_DEFAULT_BOARD` | `esp32` | Board listed first, so the page opens with it selected |
 | `APP_CONVERSATIONS_DIR` | `data/conversations` | Folder where each conversation is saved as JSON |
 
-Example: `APP_OLLAMA_MODEL=llama3.1:8b python server.py`.
+Example: `APP_OLLAMA_MODEL=llama3.1:8b python server.py`. `.env.example` lists the ones a
+machine usually sets; Compose reads `.env`, and outside Docker `set -a; . ./.env; set +a` loads
+it into the shell.
 
 ## API
 
@@ -166,8 +226,9 @@ Example: `APP_OLLAMA_MODEL=llama3.1:8b python server.py`.
 | GET | `/version` | — | `200` the application's `name` and `version` |
 
 Errors use `{"detail": "..."}`: `404` for an unknown board, conversation or message, `422` for an
-invalid body, `502` when Ollama cannot answer. If the model fails, nothing is saved, so the
-student can simply send the message again. Try every route from `/docs`.
+invalid body, `502` when the provider cannot answer and `429` once the hour's cap is reached. If
+the model fails, nothing is saved, so the student can simply send the message again. Try every
+route from `/docs`.
 
 The pins come from reading the generated code, in `app/services/pin_detector.py`: the pin
 arguments of calls such as `pinMode`, `digitalWrite`, `analogRead`, `ledcAttach`, `tone` and
@@ -240,7 +301,8 @@ ruff format --check .
 pytest
 ```
 
-The tests replace Ollama with a fake model, so they need neither Ollama nor a network.
+The tests replace the provider with a fake model, so they need no model, no network and no
+API key.
 
 ## Continuous integration and releases
 
@@ -275,18 +337,50 @@ One-time setup, all in the region the instance runs in:
    with the audience `sts.amazonaws.com`.
 3. IAM: a role for EC2 with the managed policies `AmazonSSMManagedInstanceCore` and
    `AmazonEC2ContainerRegistryReadOnly`.
-4. EC2: an Ubuntu Server 24.04 LTS instance with at least 16 GB of memory, such as a
-   `t4g.xlarge`, a 30 GB disk, that role, a security group open only on TCP port 8000, and
-   `deploy/ec2-user-data.sh` as its user data.
+4. EC2: an Ubuntu Server 24.04 LTS instance with that role, a 30 GB disk, a security group
+   open only on TCP port 8000, and `deploy/ec2-user-data.sh` as its user data. Answering with
+   the Claude API asks nothing of the instance, so a `t4g.small` is enough; running the model
+   there needs at least 16 GB of memory, such as a `t4g.xlarge`.
 5. IAM: a role for GitHub Actions with the trust policy in `deploy/github-trust-policy.json` and
    the permissions in `deploy/github-permissions-policy.json`, with `ACCOUNT_ID`, `REGION` and
    `INSTANCE_ID` replaced.
 6. GitHub, in Settings > Secrets and variables > Actions: the secret `AWS_ROLE_ARN`, with the ARN
    of that role, and the variables `AWS_REGION` and `EC2_INSTANCE_ID`.
+7. Systems Manager Parameter Store: `/duckoder/anthropic-api-key`, a `SecureString` holding the
+   key of the Claude API, as below.
 
-The server keeps its files in `/opt/duckoder`, where settings such as `APP_OLLAMA_MODEL` go in
-`.env`. `deploy/update-server.sh`, which the workflow sends to it, reads `compose.yaml` from this
-public repository at the version's tag.
+The server keeps its files in `/opt/duckoder`, where the settings go in `.env`.
+`deploy/update-server.sh`, which the workflow sends to it, reads `compose.yaml` from this public
+repository at the version's tag and leaves the lines of `.env` it does not write itself, so what
+is set by hand there survives the deploys.
+
+### The key of the Claude API
+
+The key is kept in Parameter Store as a `SecureString`, and the instance reads it from there at
+every deploy. It is in no GitHub secret, in no workflow and in no command sent to the instance:
+Systems Manager keeps the text of those commands for 30 days, where a key would stay readable.
+Store it once, from your own machine:
+
+```bash
+aws ssm put-parameter --name /duckoder/anthropic-api-key --type SecureString \
+  --value sk-ant-... --region <region>
+```
+
+Rotating it is the same command with `--overwrite`, and the next deploy picks the new value up;
+every read is recorded in CloudTrail. This needs no extra permission: the instance role's
+`AmazonSSMManagedInstanceCore` already allows `ssm:GetParameter`, and the default `alias/aws/ssm`
+key lets every principal of the account decrypt — which is also its limit, as anyone in the
+account who can read parameters can read this key. A customer managed key narrows that, in
+exchange for granting the instance role `kms:Decrypt` on it.
+
+With no such parameter the deploy keeps the `APP_ANTHROPIC_API_KEY` already in `.env`, so a
+server that answers with a local model needs none of this: give it `APP_LLM_PROVIDER=ollama` and
+`COMPOSE_PROFILES=local-model` in `/opt/duckoder/.env` instead. The first deploy after moving to
+the API takes the model's containers off the instance, as they stopped being services of the
+stack; `sudo docker volume rm duckoder_models` also frees the 4.7 GB the model occupied.
+
+The AWS CLI is what reads the parameter, and Ubuntu 24.04 has no package for it, so the deploy
+installs it as a snap the first time it is missing.
 
 To serve the site at a domain over HTTPS, without the port, point the domain's A records for
 `www` and for the bare domain at an Elastic IP associated with the instance, open TCP ports 80 and
@@ -297,7 +391,7 @@ can be closed. Removing the variable turns this off at the next deploy.
 
 ## Manual end-to-end check
 
-With Ollama and the server running, from another device on the same network:
+With the server running, from another device on the same network:
 
 1. Open the address from the server log; the board list loads.
 2. Run `help`, then `pinout`: the commands print, and the board opens in a pane beside the
@@ -309,4 +403,5 @@ With Ollama and the server running, from another device on the same network:
 6. Reload the page; the conversation comes back from the address.
 7. Copy the code; it pastes intact into the Arduino IDE.
 8. Type `clear` and confirm; the screen empties and the next reply starts again at "versão 1".
-9. Stop Ollama and send a request; a readable error appears and the duck looks confused.
+9. Make the provider fail, by stopping Ollama or pointing the key at nothing, and send a
+   request; a readable error appears and the duck looks confused.
