@@ -3,7 +3,9 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [master]
+    # Every branch, so a push without an open pull request is checked too. Tags are left out:
+    # the release workflow calls this one for them.
+    branches: ["**"]
   # Lets the release workflow run the same checks before publishing.
   workflow_call:
 

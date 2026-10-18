@@ -307,7 +307,7 @@ API key.
 ## Continuous integration and releases
 
 - `.github/workflows/ci.yml` runs the development checks on Python 3.11 and 3.12 for every pull
-  request and every push to `master`.
+  request and every push, whatever the branch.
 - `.github/workflows/release.yml` runs when a version tag is pushed. It runs the same checks,
   confirms that the tag matches `APP_VERSION` in `app/main.py`, publishes a GitHub release with
   generated notes and a `duckoder-<tag>.zip` archive of the source, and then deploys the version
