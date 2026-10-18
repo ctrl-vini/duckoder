@@ -50,7 +50,7 @@ export const UI_TEXT = {
     command: "duckoder --sobre",
     version: (version) => `versão ${version}`,
     description:
-      "Plataforma web que gera código para placas didáticas a partir de pedidos em português, com um modelo de linguagem que roda na própria rede local.",
+      "Plataforma web que gera código para placas didáticas a partir de pedidos em português, com um modelo de linguagem.",
     details: [
       { label: "autor", value: "ctrl-vini", href: "https://github.com/ctrl-vini" },
       {
