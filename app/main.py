@@ -15,7 +15,7 @@ from app.services.prompt_builder import PromptBuilder
 from app.services.rate_limiter import RequestRateLimiter
 
 APP_TITLE = "Duckoder"
-APP_VERSION = "1.3.1"
+APP_VERSION = "1.4.0"
 
 
 def create_app(settings: Settings, llm_client: LlmClient | None = None) -> FastAPI:
