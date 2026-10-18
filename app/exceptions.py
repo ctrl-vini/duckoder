@@ -19,6 +19,18 @@ class InvalidBoardProfileError(Exception):
         self.path = path
 
 
+class InvalidSettingError(Exception):
+    """Raised at startup when an environment variable holds a value the server cannot work with.
+
+    The message names the variable and what was expected, never the value it held: a setting can
+    be a credential, and this message goes to the server log.
+    """
+
+    def __init__(self, variable: str, reason: str) -> None:
+        super().__init__(f"Invalid {variable}: {reason}")
+        self.variable = variable
+
+
 class LlmUnavailableError(Exception):
     """Raised when the language model cannot produce a reply (service down, model missing...)."""
 

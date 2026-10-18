@@ -7,10 +7,11 @@ from typing import Any
 import ollama
 import pytest
 
-from app.clients.llm_client import ChatMessage, GenerationOptions, OllamaClient
+from app.clients.llm_client import ChatMessage
+from app.clients.ollama_client import OllamaClient, OllamaOptions
 from app.exceptions import LlmUnavailableError
 
-OPTIONS = GenerationOptions(temperature=0.5, context_size=4096, keep_alive="10m")
+OPTIONS = OllamaOptions(temperature=0.5, context_size=4096, keep_alive="10m")
 
 
 class StubOllamaApi:

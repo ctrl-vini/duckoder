@@ -6,9 +6,10 @@ Usage: python -m scripts.ask_model "Pisque o LED embutido a cada segundo" [--boa
 import argparse
 import sys
 
-from app.clients.llm_client import LlmResult, OllamaClient
+from app.clients.llm_client import LlmResult
+from app.clients.llm_provider import LlmProviderRegistry
 from app.config import load_settings
-from app.exceptions import BoardNotFoundError, LlmUnavailableError
+from app.exceptions import BoardNotFoundError, InvalidSettingError, LlmUnavailableError
 from app.schemas.pin_usage import PinUsage
 from app.services.board_registry import BoardRegistry
 from app.services.pin_detector import detect_pin_usage
@@ -27,8 +28,8 @@ def main() -> int:
     try:
         profile = BoardRegistry.from_directory(settings.boards_dir).get_board(arguments.board)
         messages = PromptBuilder.from_file().build(profile, [], arguments.request)
-        result = OllamaClient.from_settings(settings).chat(messages)
-    except (BoardNotFoundError, LlmUnavailableError) as error:
+        result = LlmProviderRegistry().create(settings).chat(messages)
+    except (BoardNotFoundError, InvalidSettingError, LlmUnavailableError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
 

@@ -2,7 +2,8 @@
 
 from fastapi import FastAPI
 
-from app.clients.llm_client import LlmClient, OllamaClient
+from app.clients.llm_client import LlmClient
+from app.clients.llm_provider import LlmProviderRegistry
 from app.config import Settings
 from app.errors import register_error_handlers
 from app.frontend import FrontendFiles
@@ -18,7 +19,7 @@ APP_VERSION = "1.3.1"
 
 
 def create_app(settings: Settings, llm_client: LlmClient | None = None) -> FastAPI:
-    """Create the application; pass llm_client to replace the Ollama model, as tests do."""
+    """Create the application; pass llm_client to replace the configured provider, as tests do."""
     app = FastAPI(title=APP_TITLE, version=APP_VERSION)
 
     board_registry = BoardRegistry.from_directory(settings.boards_dir, settings.default_board_id)
@@ -28,7 +29,7 @@ def create_app(settings: Settings, llm_client: LlmClient | None = None) -> FastA
         boards=board_registry,
         conversations=ConversationRepository(settings.conversations_dir),
         prompt_builder=PromptBuilder.from_file(),
-        llm_client=llm_client or OllamaClient.from_settings(settings),
+        llm_client=llm_client or LlmProviderRegistry().create(settings),
     )
 
     register_error_handlers(app)

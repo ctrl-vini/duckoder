@@ -196,7 +196,7 @@ export const UI_TEXT = {
     404: "conversa ou placa não encontrada; comece uma nova conversa",
     422: "escreva o pedido antes de enviar, com até 4.000 caracteres",
     429: "o servidor já respondeu o máximo de pedidos desta hora; tente de novo mais tarde",
-    502: "o modelo de linguagem não respondeu; confira se o Ollama está rodando e envie de novo",
+    502: "o modelo de linguagem não respondeu; confira se o serviço do modelo está no ar e envie de novo",
   },
   unexpectedError: "o servidor não conseguiu atender o pedido; envie de novo",
 };

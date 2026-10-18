@@ -1,17 +1,11 @@
-"""Language model access: the only module that talks to Ollama."""
+"""The contract every language model provider implements, and the data it exchanges.
 
-import time
-from collections.abc import Callable
+Only this module is imported by the services: they ask a provider for a reply without knowing
+whether it comes from a model running on this machine or from an API on the internet.
+"""
+
 from dataclasses import dataclass
-from typing import Literal, Protocol, Self
-
-import ollama
-
-from app.config import Settings
-from app.exceptions import LlmUnavailableError
-
-NANOSECONDS_PER_MILLISECOND = 1_000_000
-MILLISECONDS_PER_SECOND = 1_000
+from typing import Literal, Protocol
 
 Role = Literal["system", "user", "assistant"]
 
@@ -26,7 +20,11 @@ class ChatMessage:
 
 @dataclass(frozen=True)
 class LlmResult:
-    """The model's reply and how long it took to produce it."""
+    """The model's reply and how long it took to produce it.
+
+    `load_ms` is the time the provider spent loading the model before generating; a provider that
+    does not report it, such as an API that keeps no model of ours in memory, reports zero.
+    """
 
     content: str
     model: str
@@ -35,73 +33,14 @@ class LlmResult:
     output_tokens: int
 
 
-@dataclass(frozen=True)
-class GenerationOptions:
-    """Sampling and memory settings applied to every request."""
-
-    temperature: float
-    context_size: int
-    keep_alive: str
-
-
 class LlmClient(Protocol):
-    """Anything that can answer a conversation; lets tests replace the real model."""
+    """Anything that can answer a conversation: a local model, an API or a test double."""
+
+    @property
+    def model(self) -> str:
+        """Name of the model the client sends the conversations to."""
+        ...
 
     def chat(self, messages: list[ChatMessage]) -> LlmResult:
         """Send the conversation and return the model's reply."""
         ...
-
-
-class OllamaClient:
-    """LlmClient backed by an Ollama server."""
-
-    def __init__(
-        self,
-        client: ollama.Client,
-        model: str,
-        options: GenerationOptions,
-        clock: Callable[[], float] = time.perf_counter,
-    ) -> None:
-        self._client = client
-        self._model = model
-        self._options = options
-        self._clock = clock
-
-    @classmethod
-    def from_settings(cls, settings: Settings) -> Self:
-        """Build a client for the server, model and options in the settings."""
-        options = GenerationOptions(
-            temperature=settings.llm_temperature,
-            context_size=settings.llm_context_size,
-            keep_alive=settings.llm_keep_alive,
-        )
-        return cls(ollama.Client(host=settings.ollama_url), settings.ollama_model, options)
-
-    def chat(self, messages: list[ChatMessage]) -> LlmResult:
-        """Send the conversation and return the reply with its timing."""
-        started_at = self._clock()
-        try:
-            response = self._client.chat(
-                model=self._model,
-                messages=_to_ollama_messages(messages),
-                options={
-                    "temperature": self._options.temperature,
-                    "num_ctx": self._options.context_size,
-                },
-                keep_alive=self._options.keep_alive,
-            )
-        except (ConnectionError, ollama.ResponseError) as error:
-            raise LlmUnavailableError(str(error)) from error
-        elapsed_ms = round((self._clock() - started_at) * MILLISECONDS_PER_SECOND)
-
-        return LlmResult(
-            content=response.message.content or "",
-            model=response.model or self._model,
-            elapsed_ms=elapsed_ms,
-            load_ms=(response.load_duration or 0) // NANOSECONDS_PER_MILLISECOND,
-            output_tokens=response.eval_count or 0,
-        )
-
-
-def _to_ollama_messages(messages: list[ChatMessage]) -> list[dict[str, str]]:
-    return [{"role": message.role, "content": message.content} for message in messages]

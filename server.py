@@ -6,7 +6,7 @@ import socket
 import uvicorn
 
 from app.config import load_settings
-from app.exceptions import InvalidBoardProfileError
+from app.exceptions import InvalidBoardProfileError, InvalidSettingError
 from app.main import create_app
 
 LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s: %(message)s"
@@ -34,13 +34,12 @@ def main() -> None:
 
     try:
         app = create_app(settings)
-    except InvalidBoardProfileError as error:
+    except (InvalidBoardProfileError, InvalidSettingError) as error:
         logger.error("Server not started. %s", error)
         raise SystemExit(1) from None
 
     address = f"http://{find_local_ip()}:{settings.port}"
     logger.info("Open %s on any device in the local network", address)
-    logger.info("Language model: %s at %s", settings.ollama_model, settings.ollama_url)
 
     uvicorn.run(app, host=settings.host, port=settings.port)
 
