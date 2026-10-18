@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter, status
 
-from app.dependencies import ConversationServiceDep
+from app.dependencies import ConversationServiceDep, RateLimited
 from app.schemas.conversation import Conversation, ConversationCreate, Message, MessageCreate
 from app.schemas.pin_usage import PinUsage
 
@@ -21,7 +21,11 @@ def get_conversation(conversation_id: str, service: ConversationServiceDep) -> C
     return service.get(conversation_id)
 
 
-@router.post("/{conversation_id}/messages", status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/{conversation_id}/messages",
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[RateLimited],
+)
 def send_message(
     conversation_id: str, body: MessageCreate, service: ConversationServiceDep
 ) -> Message:

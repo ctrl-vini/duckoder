@@ -1,8 +1,12 @@
 """Tests for the conversation routes."""
 
+from dataclasses import replace
+
 from fastapi.testclient import TestClient
 
+from app.config import Settings
 from app.exceptions import LlmUnavailableError
+from app.main import create_app
 from tests.fakes import FakeLlmClient
 
 
@@ -102,3 +106,18 @@ def test_pin_usage_of_unknown_message_returns_404(client: TestClient) -> None:
 
     assert response.status_code == 404
     assert response.json() == {"detail": f"Message not found: {'0' * 32}"}
+
+
+def test_more_messages_than_the_hour_allows_returns_429(
+    settings: Settings, llm_client: FakeLlmClient
+) -> None:
+    capped = TestClient(create_app(replace(settings, max_requests_per_hour=1), llm_client))
+    conversation_id = start_conversation(capped)
+    url = f"/conversations/{conversation_id}/messages"
+
+    first = capped.post(url, json={"content": "Pisque o LED"})
+    second = capped.post(url, json={"content": "Agora a cada dois segundos"})
+
+    assert first.status_code == 201
+    assert second.status_code == 429
+    assert "Try again" in second.json()["detail"]

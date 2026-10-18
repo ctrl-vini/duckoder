@@ -10,6 +10,7 @@ from app.exceptions import (
     ConversationNotFoundError,
     LlmUnavailableError,
     MessageNotFoundError,
+    RateLimitExceededError,
 )
 
 ExceptionHandler = Callable[[Request, Exception], Awaitable[JSONResponse]]
@@ -19,6 +20,7 @@ STATUS_BY_EXCEPTION: dict[type[Exception], int] = {
     ConversationNotFoundError: status.HTTP_404_NOT_FOUND,
     MessageNotFoundError: status.HTTP_404_NOT_FOUND,
     LlmUnavailableError: status.HTTP_502_BAD_GATEWAY,
+    RateLimitExceededError: status.HTTP_429_TOO_MANY_REQUESTS,
 }
 
 

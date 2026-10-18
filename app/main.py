@@ -11,6 +11,7 @@ from app.routers import boards, conversations, version
 from app.services.board_registry import BoardRegistry
 from app.services.conversation_service import ConversationService
 from app.services.prompt_builder import PromptBuilder
+from app.services.rate_limiter import RequestRateLimiter
 
 APP_TITLE = "Duckoder"
 APP_VERSION = "1.3.1"
@@ -22,6 +23,7 @@ def create_app(settings: Settings, llm_client: LlmClient | None = None) -> FastA
 
     board_registry = BoardRegistry.from_directory(settings.boards_dir, settings.default_board_id)
     app.state.board_registry = board_registry
+    app.state.rate_limiter = RequestRateLimiter(settings.max_requests_per_hour)
     app.state.conversation_service = ConversationService(
         boards=board_registry,
         conversations=ConversationRepository(settings.conversations_dir),

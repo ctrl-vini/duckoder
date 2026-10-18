@@ -22,6 +22,7 @@ class Settings:
     llm_temperature: float
     llm_context_size: int
     llm_keep_alive: str
+    max_requests_per_hour: int
     boards_dir: Path
     default_board_id: str
     conversations_dir: Path
@@ -38,6 +39,7 @@ def load_settings() -> Settings:
         llm_temperature=float(os.getenv("APP_LLM_TEMPERATURE", "0.7")),
         llm_context_size=int(os.getenv("APP_LLM_CONTEXT_SIZE", "8192")),
         llm_keep_alive=os.getenv("APP_LLM_KEEP_ALIVE", "30m"),
+        max_requests_per_hour=int(os.getenv("APP_MAX_REQUESTS_PER_HOUR", "60")),
         boards_dir=Path(os.getenv("APP_BOARDS_DIR", str(DEFAULT_BOARDS_DIR))),
         default_board_id=os.getenv("APP_DEFAULT_BOARD", DEFAULT_BOARD_ID),
         conversations_dir=Path(os.getenv("APP_CONVERSATIONS_DIR", str(DEFAULT_CONVERSATIONS_DIR))),

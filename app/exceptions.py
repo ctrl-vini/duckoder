@@ -23,6 +23,14 @@ class LlmUnavailableError(Exception):
     """Raised when the language model cannot produce a reply (service down, model missing...)."""
 
 
+class RateLimitExceededError(Exception):
+    """Raised when the server has already generated as many replies this hour as it is allowed."""
+
+    def __init__(self, retry_after_s: int) -> None:
+        super().__init__(f"Too many requests. Try again in {retry_after_s} s.")
+        self.retry_after_s = retry_after_s
+
+
 class ConversationNotFoundError(Exception):
     """Raised when no conversation exists for the requested id."""
 
