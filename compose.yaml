@@ -1,6 +1,8 @@
-# Duckoder and its language model: `docker compose up -d`, then open port 8000 of this machine
-# from any device on the local network. The first start downloads the model, about 4.7 GB, into
-# the models volume; later starts find it there and work offline.
+# Duckoder: `docker compose up -d`, then open port 8000 of this machine from any device on the
+# local network. The web server answers with the provider named in APP_LLM_PROVIDER, the Claude
+# API by default, which needs APP_ANTHROPIC_API_KEY in .env. With `APP_LLM_PROVIDER=ollama` and
+# `COMPOSE_PROFILES=local-model` in .env the model runs in a container beside the server instead,
+# and the first start downloads it, about 4.7 GB, into the models volume.
 name: duckoder
 
 services:
@@ -12,8 +14,16 @@ services:
     ports:
       - "8000:8000"
     environment:
+      APP_LLM_PROVIDER: ${APP_LLM_PROVIDER:-anthropic}
+      # Read only with the anthropic provider. It belongs in .env, never in this file.
+      APP_ANTHROPIC_API_KEY: ${APP_ANTHROPIC_API_KEY:-}
+      APP_ANTHROPIC_MODEL: ${APP_ANTHROPIC_MODEL:-claude-sonnet-5-5}
+      APP_ANTHROPIC_MAX_TOKENS: ${APP_ANTHROPIC_MAX_TOKENS:-4096}
+      # Read only with the ollama provider.
       APP_OLLAMA_URL: ${APP_OLLAMA_URL:-http://ollama:11434}
       APP_OLLAMA_MODEL: ${APP_OLLAMA_MODEL:-qwen2.5-coder:7b}
+      # Replies generated per hour, across every visitor; 0 turns the cap off.
+      APP_MAX_REQUESTS_PER_HOUR: ${APP_MAX_REQUESTS_PER_HOUR:-60}
     # Lets APP_OLLAMA_URL=http://host.docker.internal:11434 reach an Ollama installed on the
     # host, on Linux as on Docker Desktop.
     extra_hosts:
@@ -23,10 +33,13 @@ services:
     depends_on:
       model:
         condition: service_completed_successfully
+        # Without the local-model profile there is no model service, and the server starts alone.
+        required: false
     restart: unless-stopped
 
   ollama:
     image: ollama/ollama:0.40.3
+    profiles: ["local-model"]
     volumes:
       - models:/root/.ollama
     healthcheck:
@@ -40,6 +53,7 @@ services:
   # without going to the internet.
   model:
     image: ollama/ollama:0.40.3
+    profiles: ["local-model"]
     environment:
       OLLAMA_HOST: http://ollama:11434
       MODEL: ${APP_OLLAMA_MODEL:-qwen2.5-coder:7b}
